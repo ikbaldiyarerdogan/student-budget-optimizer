@@ -1,16 +1,21 @@
 <script setup>
+import { inject } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth.store.js'
 
-const router    = useRouter()
-const route     = useRoute()
-const authStore = useAuthStore()
+const router      = useRouter()
+const route       = useRoute()
+const authStore   = useAuthStore()
+
+// Injected from App.vue
+const sidebarOpen   = inject('sidebarOpen', { value: false })
+const toggleSidebar = inject('toggleSidebar', () => {})
 
 const navItems = [
-  { name: 'dashboard', path: '/panel',       icon: '🏠', label: 'Dashboard'   },
-  { name: 'expenses',  path: '/harcamalar',  icon: '💸', label: 'Harcamalar'  },
-  { name: 'reports',   path: '/raporlar',    icon: '📈', label: 'Raporlar'    },
-  { name: 'settings',  path: '/ayarlar',     icon: '⚙️', label: 'Ayarlar'     },
+  { name: 'dashboard', path: '/panel',      icon: '🏠', label: 'Dashboard'  },
+  { name: 'expenses',  path: '/harcamalar', icon: '💸', label: 'Harcamalar' },
+  { name: 'reports',   path: '/raporlar',   icon: '📈', label: 'Raporlar'   },
+  { name: 'settings',  path: '/ayarlar',    icon: '⚙️', label: 'Ayarlar'    },
 ]
 
 function isActive(path) {
@@ -30,10 +35,20 @@ async function handleLogout() {
   await authStore.signOut()
   router.push('/giris')
 }
+
+// Close sidebar when navigating on mobile
+function handleNavClick() {
+  if (sidebarOpen.value) toggleSidebar()
+}
 </script>
 
 <template>
-  <aside class="sidebar" role="navigation" aria-label="Ana Navigasyon">
+  <aside
+    class="sidebar"
+    :class="{ 'sidebar-open': sidebarOpen }"
+    role="navigation"
+    aria-label="Ana Navigasyon"
+  >
     <!-- Logo -->
     <div class="sidebar-logo">
       <div class="sidebar-logo-icon">💰</div>
@@ -53,6 +68,7 @@ async function handleLogout() {
         class="nav-item"
         :class="{ active: isActive(item.path) }"
         :id="`nav-${item.name}`"
+        @click="handleNavClick"
       >
         <span class="nav-icon">{{ item.icon }}</span>
         {{ item.label }}
@@ -72,3 +88,17 @@ async function handleLogout() {
     </div>
   </aside>
 </template>
+
+<style scoped>
+/* Mobile: slide in from left */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 100;
+    box-shadow: var(--shadow-lg);
+  }
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+}
+</style>

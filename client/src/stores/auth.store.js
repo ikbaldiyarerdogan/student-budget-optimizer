@@ -8,11 +8,12 @@ import {
   onAuthChange,
 } from '../services/firebase.js'
 import apiClient from '../services/api.client.js'
+import { useThemeStore } from './theme.store.js'
 
 export const useAuthStore = defineStore('auth', () => {
   // ─── State ───────────────────────────────────────────────────────────────────
   const currentUser  = ref(null)  // Firebase user objesi
-  const userProfile  = ref(null)  // Firestore'daki profil (API üzerinden)
+  const userProfile  = ref(null)  // Backend'deki profil (API üzerinden)
   const loading      = ref(true)
   const authReady    = ref(false)
 
@@ -23,7 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
   const uid           = computed(() => currentUser.value?.uid || null)
   const monthlyIncome = computed(() => userProfile.value?.monthlyIncome || 0)
   const idealRatios   = computed(() => userProfile.value?.idealRatios || {
-    kira: 35, yemek: 22, ulasim: 12, faturalar: 8, eglence: 10, egitim: 8, diger: 5,
+    kira: 25, yemek: 22, ulasim: 12, faturalar: 8, eglence: 10, egitim: 8, birikim: 10, diger: 5,
   })
 
   // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -38,27 +39,33 @@ export const useAuthStore = defineStore('auth', () => {
         } else {
           userProfile.value = null
         }
-        loading.value  = false
+        loading.value   = false
         authReady.value = true
         resolve(firebaseUser)
       })
     })
   }
 
+  // GET /api/users/me → { success: true, data: {...} }
   async function fetchUserProfile() {
     try {
-      const data = await apiClient.get('/users/me')
-      userProfile.value = data
+      const res = await apiClient.get('/users/me')
+      // Axios interceptor response.data döndürür → res = { success, data }
+      userProfile.value = res.data ?? res
+      
+      if (userProfile.value?.theme) {
+        useThemeStore().setTheme(userProfile.value.theme)
+      }
     } catch {
-      // Profil henüz oluşturulmamış olabilir (yeni kayıt)
+      // Profil henüz oluşturulmamış (yeni kayıt) — sorun değil
       userProfile.value = null
     }
   }
 
-  async function signInEmail(email, password) {
+  async function signInEmail(emailVal, password) {
     loading.value = true
     try {
-      const user = await loginWithEmail(email, password)
+      const user = await loginWithEmail(emailVal, password)
       currentUser.value = user
       await fetchUserProfile()
     } finally {
@@ -71,7 +78,6 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const user = await loginWithGoogle()
       currentUser.value = user
-      // Yeni Google kullanıcısı için profil oluştur
       await ensureUserProfile(user)
       await fetchUserProfile()
     } finally {
@@ -79,39 +85,53 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(email, password, name, university) {
+  async function register(emailVal, password, name, university) {
     loading.value = true
     try {
-      const user = await registerWithEmail(email, password, name)
+      // 1. Firebase Auth'ta kullanıcı oluştur
+      const user = await registerWithEmail(emailVal, password, name)
       currentUser.value = user
-      // Backend'de profil oluştur
-      await apiClient.post('/users/register', { name, email, university })
-      await fetchUserProfile()
+
+      // 2. Backend'de Firestore profili oluştur
+      //    Endpoint: POST /api/users/me
+      const res = await apiClient.post('/users/me', { name, email: emailVal, university })
+      userProfile.value = res.data ?? res
     } finally {
       loading.value = false
     }
   }
 
+  // Google ile giriş: profil yoksa oluştur, varsa atla
   async function ensureUserProfile(firebaseUser) {
     try {
-      await apiClient.get('/users/me')
+      const res = await apiClient.get('/users/me')
+      // Profil bulundu — güncellemeye gerek yok
+      if (res.data || res.name) return
     } catch {
-      // Profil yok → oluştur
-      await apiClient.post('/users/register', {
-        name:  firebaseUser.displayName || firebaseUser.email,
-        email: firebaseUser.email,
-      })
+      // 404 → profil yok, oluştur
     }
+    await apiClient.post('/users/me', {
+      name:  firebaseUser.displayName || firebaseUser.email,
+      email: firebaseUser.email,
+      university: '',
+    })
   }
 
+  // PATCH /api/users/me/settings
   async function updateMonthlyIncome(amount) {
-    const data = await apiClient.put('/users/me', { monthlyIncome: amount })
-    userProfile.value = data
+    const res = await apiClient.patch('/users/me/settings', { monthlyIncome: amount })
+    userProfile.value = res.data ?? res
   }
 
   async function updateIdealRatios(ratios) {
-    const data = await apiClient.put('/users/me', { idealRatios: ratios })
-    userProfile.value = data
+    const res = await apiClient.patch('/users/me/settings', { idealRatios: ratios })
+    userProfile.value = res.data ?? res
+  }
+
+  async function updateTheme(theme) {
+    const res = await apiClient.patch('/users/me/settings', { theme: theme })
+    userProfile.value = res.data ?? res
+    useThemeStore().setTheme(theme)
   }
 
   async function signOut() {
@@ -127,6 +147,6 @@ export const useAuthStore = defineStore('auth', () => {
     isLoggedIn, displayName, email, uid, monthlyIncome, idealRatios,
     // actions
     initAuth, signInEmail, signInGoogle, register, signOut,
-    updateMonthlyIncome, updateIdealRatios, fetchUserProfile,
+    updateMonthlyIncome, updateIdealRatios, updateTheme, fetchUserProfile,
   }
 })

@@ -11,6 +11,7 @@ const upsertProfile = async (uid, { name, email, university }) => {
     university: university ?? '',
     monthlyIncome: 0,
     idealRatios: DEFAULT_IDEAL_RATIOS,
+    theme: 'dark',
     createdAt: new Date().toISOString(),
   });
 };
@@ -27,11 +28,12 @@ const getProfile = async (uid) => {
 /**
  * Aylık gelir ve/veya ideal oranları günceller.
  */
-const updateSettings = async (uid, { monthlyIncome, idealRatios, university }) => {
+const updateSettings = async (uid, { monthlyIncome, idealRatios, university, theme }) => {
   const updates = {};
   if (monthlyIncome !== undefined) updates.monthlyIncome = monthlyIncome;
   if (idealRatios !== undefined) updates.idealRatios = idealRatios;
   if (university !== undefined) updates.university = university;
+  if (theme !== undefined) updates.theme = theme;
 
   return UserRepository.update(uid, updates);
 };

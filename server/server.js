@@ -6,6 +6,7 @@ import morgan from 'morgan';
 
 import userRoutes from './src/routes/user.routes.js';
 import expenseRoutes from './src/routes/expense.routes.js';
+import chatRoutes from './src/routes/chat.routes.js';
 import { errorHandler } from './src/middleware/error.middleware.js';
 
 const app = express();
@@ -24,6 +25,7 @@ app.use(express.json());
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/users', userRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/chat', chatRoutes);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {

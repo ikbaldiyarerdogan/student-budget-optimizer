@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Single Page Application (SPA) ayarı
+# Tüm root olmayan istekleri Vue router'ın handle edebilmesi için index.html'e yönlendir.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

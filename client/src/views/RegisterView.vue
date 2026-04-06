@@ -66,12 +66,17 @@ async function handleGoogleRegister() {
   }
 }
 
-function mapFirebaseError(msg) {
+function mapFirebaseError(msg = '') {
+  console.error('[Kayıt hatası]', msg)               // Dev için — production'da silinebilir
   if (msg.includes('email-already-in-use')) return 'Bu e-posta adresi zaten kayıtlı.'
   if (msg.includes('weak-password'))        return 'Şifre çok zayıf. Daha güçlü bir şifre seç.'
   if (msg.includes('invalid-email'))        return 'Geçersiz e-posta adresi.'
-  if (msg.includes('network-request-failed')) return 'İnternet bağlantınızı kontrol edin.'
-  return 'Kayıt sırasında bir hata oluştu.'
+  if (msg.includes('network-request-failed') || msg.includes('Network Error'))
+    return 'Sunucuya bağlanılamadı. İnternet bağlantınızı veya sunucunun çalıştığını kontrol edin.'
+  if (msg.includes('404') || msg.includes('Not Found'))
+    return 'Sunucu endpoint bulunamadı (404). Geliştirici konsolunu kontrol edin.'
+  // Gerçek mesajı göster (geliştirme aşamasında yararlı)
+  return msg || 'Kayıt sırasında bir hata oluştu.'
 }
 </script>
 

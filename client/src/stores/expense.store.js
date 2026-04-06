@@ -11,11 +11,9 @@ export const useExpenseStore = defineStore('expense', () => {
     submitting.value = true
     error.value = null
     try {
-      const data = await apiClient.post('/expenses', expenseData)
-      // Budget store'u tetikle: mevcut ayı yenile
+      await apiClient.post('/expenses', expenseData)
       const budgetStore = useBudgetStore()
-      await budgetStore.fetchExpenses()
-      return data
+      await budgetStore.fetchMonthlyData()
     } catch (err) {
       error.value = err.message
       throw err
@@ -28,10 +26,9 @@ export const useExpenseStore = defineStore('expense', () => {
     submitting.value = true
     error.value = null
     try {
-      const data = await apiClient.put(`/expenses/${id}`, updates)
+      await apiClient.put(`/expenses/${id}`, updates)
       const budgetStore = useBudgetStore()
-      await budgetStore.fetchExpenses()
-      return data
+      await budgetStore.fetchMonthlyData()
     } catch (err) {
       error.value = err.message
       throw err
@@ -46,7 +43,7 @@ export const useExpenseStore = defineStore('expense', () => {
     try {
       await apiClient.delete(`/expenses/${id}`)
       const budgetStore = useBudgetStore()
-      await budgetStore.fetchExpenses()
+      await budgetStore.fetchMonthlyData()
     } catch (err) {
       error.value = err.message
       throw err

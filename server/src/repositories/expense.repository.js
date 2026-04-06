@@ -24,10 +24,12 @@ const findByMonth = async (uid, month) => {
     .collection(COLLECTION)
     .where('userId', '==', uid)
     .where('month', '==', month)
-    .orderBy('date', 'desc')
     .get();
 
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const docs = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  // Sort in memory (newest first) — avoids Firestore composite index requirement
+  docs.sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
+  return docs;
 };
 
 /**

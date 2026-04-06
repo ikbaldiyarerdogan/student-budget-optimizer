@@ -37,19 +37,28 @@ async function handleGoogleLogin() {
     await authStore.signInGoogle()
     router.push('/panel')
   } catch (err) {
-    error.value = 'Google ile giriş başarısız. Tekrar deneyin.'
+    console.error('[Google Login hatası]', err)
+    error.value = mapFirebaseError(err?.message || '')
   } finally {
     loading.value = false
   }
 }
 
-function mapFirebaseError(msg) {
-  if (msg.includes('user-not-found'))      return 'Bu e-posta adresiyle kayıtlı hesap bulunamadı.'
-  if (msg.includes('wrong-password'))      return 'Şifre hatalı.'
-  if (msg.includes('invalid-credential'))  return 'E-posta veya şifre hatalı.'
-  if (msg.includes('too-many-requests'))   return 'Çok fazla başarısız deneme. Lütfen bekleyin.'
+function mapFirebaseError(msg = '') {
+  console.error('[Giriş hatası]', msg)   // Gerçek hatayı konsola yaz
+  if (msg.includes('user-not-found'))        return 'Bu e-posta adresiyle kayıtlı hesap bulunamadı.'
+  if (msg.includes('wrong-password'))        return 'Şifre hatalı.'
+  if (msg.includes('invalid-credential'))    return 'E-posta veya şifre hatalı.'
+  if (msg.includes('too-many-requests'))     return 'Çok fazla başarısız deneme. Lütfen bekleyin.'
   if (msg.includes('network-request-failed')) return 'İnternet bağlantınızı kontrol edin.'
-  return 'Giriş sırasında bir hata oluştu.'
+  if (msg.includes('api-key-not-valid') || msg.includes('API_KEY_SERVICE_BLOCKED') || msg.includes('invalid-api-key'))
+    return 'Firebase API Key geçersiz. client/.env dosyasını kontrol edin.'
+  if (msg.includes('auth/configuration-not-found') || msg.includes('PROJECT_NOT_FOUND'))
+    return 'Firebase projesi bulunamadı. client/.env içindeki PROJECT_ID\'yi kontrol edin.'
+  if (msg.includes('popup-closed-by-user'))  return 'Google giriş penceresi kapatıldı.'
+  if (msg.includes('popup-blocked'))         return 'Popup engellendi. Tarayıcı ayarlarını kontrol edin.'
+  // Geliştime için gerçek mesajı göster
+  return msg || 'Giriş sırasında bir hata oluştu.'
 }
 </script>
 

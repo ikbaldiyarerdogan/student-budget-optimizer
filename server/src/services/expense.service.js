@@ -43,7 +43,7 @@ const getMonthlyData = async (uid, month) => {
     return acc;
   }, {});
 
-  const analysis = analyzeBudget(
+  const analysis = await analyzeBudget(
     user?.monthlyIncome ?? 0,
     spentByCategory,
     user?.idealRatios ?? {}
